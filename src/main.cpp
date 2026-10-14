@@ -104,7 +104,7 @@ private:
     VkCommandBuffer commandBuffer;
 
     VkSemaphore imageAvailableSemaphore;
-    VkSemaphore renderFinishedSemaphore;
+    std::vector<VkSemaphore> renderFinishedSemaphores;
     VkFence inFlightFence;
 
     void initWindow() {
@@ -142,7 +142,9 @@ private:
     }
 
     void cleanup() {
-        vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);
+        for (auto semaphore : renderFinishedSemaphores) {
+            vkDestroySemaphore(device, semaphore, nullptr);
+        }
         vkDestroySemaphore(device, imageAvailableSemaphore, nullptr);
         vkDestroyFence(device, inFlightFence, nullptr);
 
@@ -660,9 +662,15 @@ private:
         fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
         if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
-            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS ||
             vkCreateFence(device, &fenceInfo, nullptr, &inFlightFence) != VK_SUCCESS) {
             throw std::runtime_error("failed to create synchronization objects for a frame!");
+        }
+
+        renderFinishedSemaphores.resize(swapChainImages.size());
+        for (size_t i = 0; i < swapChainImages.size(); i++) {
+            if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create synchronization objects for an image!");
+            }
         }
     }
 
@@ -688,7 +696,7 @@ private:
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &commandBuffer;
 
-        VkSemaphore signalSemaphores[] = {renderFinishedSemaphore};
+        VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[imageIndex]};
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
