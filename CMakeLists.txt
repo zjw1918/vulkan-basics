@@ -16,13 +16,24 @@ add_executable(vulkan_app src/main.cpp)
 target_include_directories(vulkan_app PRIVATE ${GLM_INCLUDE_DIR} third_party)
 target_link_libraries(vulkan_app PRIVATE Vulkan::Vulkan glfw)
 
-# 着色器：glslc 把 GLSL 编译成 SPIR-V，放到 build/shaders/（shader.vert -> vert.spv）
+# 第十二期：计算着色器粒子，另一个程序
+add_executable(particles src/particles.cpp)
+target_include_directories(particles PRIVATE ${GLM_INCLUDE_DIR})
+target_link_libraries(particles PRIVATE Vulkan::Vulkan glfw)
+
+# 着色器：glslc 把 GLSL 编译成 SPIR-V，放到 build/shaders/
+#   shader.vert -> vert.spv，particles.comp -> particles_comp.spv
 find_program(GLSLC glslc HINTS $ENV{VULKAN_SDK}/bin REQUIRED)
-set(SHADER_SOURCES shaders/shader.vert shaders/shader.frag)
+set(SHADER_SOURCES shaders/shader.vert shaders/shader.frag shaders/particles.vert shaders/particles.frag)
 foreach(SRC ${SHADER_SOURCES})
+  get_filename_component(NAME ${SRC} NAME_WE)
   get_filename_component(STAGE ${SRC} LAST_EXT)
   string(SUBSTRING ${STAGE} 1 -1 STAGE)
-  set(SPV ${CMAKE_BINARY_DIR}/shaders/${STAGE}.spv)
+  if(NAME STREQUAL "shader")
+    set(SPV ${CMAKE_BINARY_DIR}/shaders/${STAGE}.spv)
+  else()
+    set(SPV ${CMAKE_BINARY_DIR}/shaders/${NAME}_${STAGE}.spv)
+  endif()
   add_custom_command(
     OUTPUT ${SPV}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/shaders
@@ -33,6 +44,7 @@ foreach(SRC ${SHADER_SOURCES})
 endforeach()
 add_custom_target(shaders DEPENDS ${SPV_FILES})
 add_dependencies(vulkan_app shaders)
+add_dependencies(particles shaders)
 
 # 贴图和模型：复制到 build/textures/、build/models/，程序按相对路径读取
 add_custom_command(TARGET vulkan_app POST_BUILD
