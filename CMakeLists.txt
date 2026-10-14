@@ -13,7 +13,7 @@ find_package(glfw3 REQUIRED)
 find_path(GLM_INCLUDE_DIR glm/glm.hpp REQUIRED)
 
 add_executable(vulkan_app src/main.cpp)
-target_include_directories(vulkan_app PRIVATE ${GLM_INCLUDE_DIR})
+target_include_directories(vulkan_app PRIVATE ${GLM_INCLUDE_DIR} third_party)
 target_link_libraries(vulkan_app PRIVATE Vulkan::Vulkan glfw)
 
 # 着色器：glslc 把 GLSL 编译成 SPIR-V，放到 build/shaders/（shader.vert -> vert.spv）
@@ -33,3 +33,7 @@ foreach(SRC ${SHADER_SOURCES})
 endforeach()
 add_custom_target(shaders DEPENDS ${SPV_FILES})
 add_dependencies(vulkan_app shaders)
+
+# 贴图：复制到 build/textures/，程序按相对路径读取
+add_custom_command(TARGET vulkan_app POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/textures ${CMAKE_BINARY_DIR}/textures)
