@@ -34,6 +34,7 @@ endforeach()
 add_custom_target(shaders DEPENDS ${SPV_FILES})
 add_dependencies(vulkan_app shaders)
 
-# 贴图：复制到 build/textures/，程序按相对路径读取
+# 贴图和模型：复制到 build/textures/、build/models/，程序按相对路径读取
 add_custom_command(TARGET vulkan_app POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/textures ${CMAKE_BINARY_DIR}/textures)
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/textures ${CMAKE_BINARY_DIR}/textures
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/models ${CMAKE_BINARY_DIR}/models)
